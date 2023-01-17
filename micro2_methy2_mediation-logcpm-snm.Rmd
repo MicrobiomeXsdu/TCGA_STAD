@@ -1,0 +1,75 @@
+---
+title: "micro2_methy2_mediation."
+author: "ykl"
+date: "2022/3/14"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = F)
+```
+
+```{r}
+#install.packages("mediation")
+library(mediation)
+require(lme4)
+load("D:/anlysisdata/stad-rna-filer/medication_log_snm/micro_methy_data_output_adj_logcpm-snm.Rdata")
+data <- micro2_methy2
+# 
+# microname <- colnames(data)[1:7]
+# methyname <- colnames(data)[8:16]
+age <- as.numeric(data$age)
+gender <- factor(data$gender)
+os <- factor(data$os)
+data[,1:16] <- scale(data[,1:16])
+
+for (i in 1:7) {
+  b <- as.numeric(data[,i])
+  for (j in 1:9) {
+    a <- as.numeric(data[,j+7])
+    set.seed(1234)
+    med.fit <- lm(b ~ a+age+gender, data=data)
+    out.fit <- glm(outcome ~ b+a+age+gender,
+         data=data,family=binomial("probit"))
+    obj <- try(med.out <-mediate(med.fit,out.fit,
+                       treat = "a",
+                       mediator= "b",
+                     sims = 100,boot=T,boot.ci.type="bca"), silent=TRUE)
+  if (is(obj, "try-error")){
+   # med.out <- NULL
+    print(c(i,j+7))
+    } 
+    else{
+     print(c(i,j+7))
+     print(summary(med.out))
+    }
+  }
+}
+```
+
+```{r}
+for (i in 1:7) {
+  b <- as.numeric(data[,i])
+  for (j in 1:9) {
+    a <- as.numeric(data[,j+7])
+    set.seed(1234)
+    med.fit <- lm(a ~ b+age+gender, data=data)
+    out.fit <- glm(outcome ~ b+a+age+gender,
+                   data=data,family=binomial("probit"))
+     obj <- try(med.out <-mediate(med.fit,out.fit,
+                       treat = "b",
+                       mediator= "a",
+                     sims = 100,boot=T,boot.ci.type="bca"), silent=TRUE)
+  if (is(obj, "try-error")){
+   # med.out <- NULL
+    print(c(j+7,i))
+    } 
+    else{
+     print(c(j+7,i))
+     print(summary(med.out))
+    }
+  }
+}
+```
